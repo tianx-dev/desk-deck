@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "desk-deck"
+version = "0.1.0"
+description = "A local touch launcher and task activity display for your desk"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Desk Deck contributors"}]
+dependencies = []
+
+[project.optional-dependencies]
+cast = ["pychromecast==14.0.10"]
+
+[project.scripts]
+desk-deck = "deskdeck.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["deskdeck*"]
+
+[tool.setuptools.package-data]
+deskdeck = ["web/*.html", "web/*.css", "web/*.js"]

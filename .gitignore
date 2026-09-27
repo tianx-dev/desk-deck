@@ -1,0 +1,21 @@
+# Machine-specific configuration and runtime data must stay local.
+config.local.toml
+*.local.toml
+.env
+.env.*
+!.env.example
+*.sqlite*
+*.db
+*.jsonl
+*.log
+*.pid
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.DS_Store
+.playwright-mcp/
+.runtime/
+.ruff_cache/

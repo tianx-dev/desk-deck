@@ -1,0 +1,51 @@
+# Safe browser preview. Use `python3 -m deskdeck init ...` for your actual Hub.
+# Generated config.local.toml contains the addresses and secret for your own setup.
+host = "127.0.0.1"
+port = 8765
+public_url = "http://127.0.0.1:8765"
+allowed_clients = ["127.0.0.1"]
+mode = "demo"
+enable_actions = false
+pairing_key = ""
+data_file = ".runtime/tasks.json"
+
+# One to five fixed launchers. A Focus tile is added automatically.
+[[launchers]]
+id = "browser"
+label = "Browser"
+subtitle = "Bring browser forward"
+icon = "chrome"
+kind = "app"
+target = "Google Chrome"
+
+[[launchers]]
+id = "terminal"
+label = "Terminal"
+subtitle = "Bring terminal forward"
+icon = "terminal"
+kind = "app"
+target = "Terminal"
+
+[[launchers]]
+id = "editor"
+label = "Editor"
+subtitle = "Bring your project forward"
+icon = "code"
+kind = "app"
+target = "Visual Studio Code"
+
+[[launchers]]
+id = "chat"
+label = "Chat"
+subtitle = "Bring conversations forward"
+icon = "slack"
+kind = "app"
+target = "Slack"
+
+[[launchers]]
+id = "mail"
+label = "Mail"
+subtitle = "Bring inbox forward"
+icon = "mail"
+kind = "app"
+target = "Microsoft Outlook"

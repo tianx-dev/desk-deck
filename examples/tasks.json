@@ -1,0 +1,15 @@
+{
+  "tasks": [
+    {
+      "id": "example-job",
+      "title": "Example local job",
+      "state": "ready",
+      "summary": "Sample task format. Use the task command to create current timestamps.",
+      "updated": 1700000000,
+      "started": 1699999940,
+      "completion": "example-result-1",
+      "quiet": false,
+      "open_url": "https://example.org/project"
+    }
+  ]
+}

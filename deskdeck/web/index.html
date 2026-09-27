@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,user-scalable=no"
+    />
+    <title>Desk Deck</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <svg style="display: none" aria-hidden="true">
+      <defs>
+        <symbol id="i-grid" viewBox="0 0 32 32">
+          <rect x="5" y="5" width="8" height="8" rx="2" />
+          <rect x="19" y="5" width="8" height="8" rx="2" />
+          <rect x="5" y="19" width="8" height="8" rx="2" />
+          <rect x="19" y="19" width="8" height="8" rx="2" />
+        </symbol>
+        <symbol id="i-code" viewBox="0 0 32 32">
+          <path d="m11 8-8 8 8 8m10-16 8 8-8 8M18 5l-4 22" />
+        </symbol>
+        <symbol id="i-chrome" viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="12" />
+          <circle cx="16" cy="16" r="5" />
+          <path d="M16 11h11M12 19 6 9m13 11-6 8" />
+        </symbol>
+        <symbol id="i-terminal" viewBox="0 0 32 32">
+          <rect x="3" y="5" width="26" height="22" rx="4" />
+          <path d="m9 11 5 5-5 5m10 0h5" />
+        </symbol>
+        <symbol id="i-slack" viewBox="0 0 32 32">
+          <path
+            stroke-width="4"
+            d="M12 4v13M4 12h13m3-8v13m8-5H15M20 28V15m8 5H15M12 28V15M4 20h13"
+          />
+        </symbol>
+        <symbol id="i-mail" viewBox="0 0 32 32">
+          <rect x="3" y="6" width="26" height="20" rx="4" />
+          <path d="m4 8 12 10L28 8" />
+        </symbol>
+        <symbol id="i-focus" viewBox="0 0 32 32">
+          <circle cx="16" cy="17" r="11" />
+          <path d="M16 11v7l4 3M12 2h8" />
+        </symbol>
+        <symbol id="i-work" viewBox="0 0 32 32">
+          <rect x="4" y="8" width="24" height="20" rx="4" />
+          <path d="M11 8V4h10v4M4 17h24m-15 0v4h6v-4" />
+        </symbol>
+        <symbol id="i-bell" viewBox="0 0 32 32">
+          <path d="M7 22h18l-3-5v-5a6 6 0 0 0-12 0v5Zm6 5h6M16 3v3" />
+        </symbol>
+        <symbol id="i-moon" viewBox="0 0 32 32">
+          <path d="M26 20A12 12 0 0 1 12 5a12 12 0 1 0 14 15Z" />
+        </symbol>
+        <symbol id="i-open" viewBox="0 0 32 32">
+          <rect x="3" y="5" width="26" height="19" rx="3" />
+          <path d="M16 24v5m-6 0h12M11 14h10m-4-4 4 4-4 4" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 32 32">
+          <path d="m6 16 7 7L26 9" />
+        </symbol>
+      </defs>
+    </svg>
+    <div class="shell">
+      <header>
+        <div class="identity">
+          <div class="mark"><i></i><i></i><i></i><i></i></div>
+          <div>
+            <h1>Desk Deck</h1>
+            <div class="connection" id="connection">
+              <i class="led"></i><span>Connecting to your Mac</span>
+            </div>
+          </div>
+        </div>
+        <div class="righthead">
+          <button class="quiet" id="quiet" aria-pressed="false">
+            <svg><use href="#i-moon" /></svg><span>Quiet</span>
+          </button>
+          <div>
+            <div class="clock" id="clock"></div>
+            <div class="date" id="date"></div>
+          </div>
+        </div>
+      </header>
+      <div class="offline-banner show" id="demo-banner">
+        Demo data · app launches are simulated
+      </div>
+      <div class="offline-banner" id="offline">
+        Connect to the local server, or pair this screen using the private link
+        from your Mac.
+      </div>
+      <div class="content" id="swipearea">
+        <section class="view on" id="view-desk">
+          <div class="keys">
+            <button class="key launch" data-app="codex">
+              <span class="corner">01</span
+              ><span class="icon"
+                ><svg><use href="#i-chrome" /></svg
+              ></span>
+              <div>
+                <div class="keyname">Browser</div>
+                <div class="sub" id="codexsub">Bring browser forward</div>
+              </div>
+            </button>
+            <button class="key launch" data-app="chrome">
+              <span class="corner">02</span
+              ><span class="icon"
+                ><svg><use href="#i-chrome" /></svg
+              ></span>
+              <div>
+                <div class="keyname">Terminal</div>
+                <div class="sub">Bring browser forward</div>
+              </div>
+            </button>
+            <button class="key launch" data-app="terminal">
+              <span class="corner">03</span
+              ><span class="icon"
+                ><svg><use href="#i-terminal" /></svg
+              ></span>
+              <div>
+                <div class="keyname">Editor</div>
+                <div class="sub">Bring your project forward</div>
+              </div>
+            </button>
+            <button class="key launch" data-app="slack">
+              <span class="corner">04</span
+              ><span class="icon"
+                ><svg><use href="#i-slack" /></svg
+              ></span>
+              <div>
+                <div class="keyname">Chat</div>
+                <div class="sub">Bring conversations forward</div>
+              </div>
+            </button>
+            <button class="key launch" data-app="outlook">
+              <span class="corner">05</span
+              ><span class="icon"
+                ><svg><use href="#i-mail" /></svg
+              ></span>
+              <div>
+                <div class="keyname">Mail</div>
+                <div class="sub">Bring inbox forward</div>
+              </div>
+            </button>
+            <button class="key" id="focuskey">
+              <span class="corner">06</span
+              ><span class="icon"
+                ><svg><use href="#i-focus" /></svg
+              ></span>
+              <div>
+                <div class="keyname">Focus</div>
+                <div class="sub" id="focussub">A little uninterrupted time</div>
+              </div>
+            </button>
+          </div>
+        </section>
+        <section class="view" id="view-tasks">
+          <div class="viewheading">
+            <h2>Your tasks</h2>
+            <span class="small">Tap to inspect</span>
+          </div>
+          <div class="workgrid" id="taskgrid"></div>
+        </section>
+        <section class="view" id="view-activity">
+          <div class="viewheading">
+            <h2>What changed</h2>
+            <button class="quiet" id="clear">Mark seen</button>
+          </div>
+          <div class="activitylist" id="activitylist"></div>
+        </section>
+        <aside class="rail">
+          <div class="railhead">
+            <h2>In motion</h2>
+            <span class="small" id="freshness">Waiting</span>
+          </div>
+          <div class="signals">
+            <div class="signal"><strong id="activecount">–</strong>active</div>
+            <div class="signal">
+              <strong id="newcount">–</strong>new updates
+            </div>
+          </div>
+          <div id="railTasks">
+            <div class="empty"><p>Waiting for your Mac’s task updates.</p></div>
+          </div>
+          <div class="railfoot" id="coverage">
+            Recent Mac tasks. Remote machines are not connected.
+          </div>
+        </aside>
+      </div>
+      <nav class="nav">
+        <div class="tabs">
+          <button class="tab selected" data-view="desk">
+            <svg><use href="#i-grid" /></svg>Desk</button
+          ><button class="tab" data-view="tasks">
+            <svg><use href="#i-work" /></svg>Tasks</button
+          ><button class="tab" data-view="activity">
+            <svg><use href="#i-bell" /></svg>Activity
+            <span class="badge" id="badge">0</span>
+          </button>
+        </div>
+        <span class="tip" id="tip">One tap. Back to your work.</span>
+      </nav>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="scrim" id="detail">
+      <section
+        class="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detailtitle"
+      >
+        <header>
+          <div class="state" id="detailstate"></div>
+          <button
+            class="close"
+            id="closedetail"
+            aria-label="Close task details"
+          >
+            ×
+          </button>
+        </header>
+        <h2 id="detailtitle"></h2>
+        <p id="detailtext"></p>
+        <footer>
+          <button class="btn primary" id="opentask">
+            <svg><use href="#i-open" /></svg>Open on Mac</button
+          ><button class="btn" id="done">Done</button>
+        </footer>
+      </section>
+    </div>
+    <div class="focusview" id="focusview">
+      <div class="focuslabel">A little space to think</div>
+      <h2>One thing at a time.</h2>
+      <div class="countdown" id="countdown">25:00</div>
+      <div class="duration">
+        <button data-min="15">15m</button
+        ><button data-min="25" class="chosen">25m</button
+        ><button data-min="50">50m</button>
+      </div>
+      <div class="focusbuttons">
+        <button class="btn primary" id="startfocus">Start focus</button
+        ><button class="btn" id="backdesk">Back to desk</button>
+      </div>
+      <div class="focusnote">Your activity inbox keeps collecting updates.</div>
+    </div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
