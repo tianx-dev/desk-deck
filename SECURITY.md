@@ -12,6 +12,8 @@ Desk Deck controls applications on a local computer. Use it only on a trusted pr
 - Only the page, two static assets, and documented API paths are served. The server does not expose its working directory.
 - No credentials, task files, browser captures, or runtime logs are included in the public source. Normal server logging does not record request bodies, Authorization headers, or pairing URLs.
 
+Machine selection shares a selected peer key with the already-paired display. Peer keys stay in ignored local configuration; normal state responses omit them. Only `/api/pair-check` permits narrowly scoped CORS for configured peer origins, and it returns an authenticated machine name rather than task data. Paired Macs are mutually trusted.
+
 ## Limits that matter
 
 **HTTP is unencrypted.** A peer capable of observing LAN traffic could see task data or the pairing key. Client IP and Origin checks do not replace transport encryption. Do not port-forward this service or expose it through a public tunnel. For a stronger environment, add a trusted HTTPS transport and revisit pairing and deployment together.

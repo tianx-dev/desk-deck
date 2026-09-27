@@ -78,9 +78,10 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => $("toast").classList.remove("show"), 3200);
   }
-  async function action(name, target, extra) {
+  async function action(name, target, extra, signal) {
     const r = await fetch("/api/action", {
       method: "POST",
+      signal,
       headers: authHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         action: name,
@@ -98,13 +99,111 @@
     $("connection").classList.toggle("off", !good);
     $("connection").querySelector("span").textContent = good
       ? model.mode === "demo"
-        ? "Synthetic demo feed"
-        : "Connected to your local server"
-      : "Feed offline or unpaired";
+        ? "Demo · " + (model.machine?.name || "My Mac")
+        : "Connected to " + (model.machine?.name || "your Mac")
+      : (model.machine?.name || "Your Mac") + " · Offline or unpaired";
     $("offline").classList.toggle("show", !good);
     document.querySelectorAll(".launch").forEach((n) => (n.disabled = !good));
     $("opentask").disabled = !good || (selected && !selected.open_url);
   }
+  const machineDialog = $("machines-dialog");
+  let machineRequest = null;
+  function renderMachines() {
+    const list = $("machines-list");
+    list.replaceChildren();
+    const current = model.machine || { name: "This Mac", url: location.origin };
+    function row(machine, isCurrent) {
+      const button = el(
+        "button",
+        "machine-option" + (isCurrent ? " current" : ""),
+      );
+      const copy = el("span", "machine-copy");
+      copy.append(el("strong", "", machine.name), el("small", "", machine.url));
+      button.append(
+        icon("open"),
+        copy,
+        el(
+          "span",
+          "machine-badge",
+          isCurrent ? (online ? "Connected ✓" : "Offline") : "Connect →",
+        ),
+      );
+      if (isCurrent) button.setAttribute("aria-current", "true");
+      button.disabled = !online || machineRequest !== null;
+      button.onclick = isCurrent
+        ? () => machineDialog.close()
+        : () => connectMachine(machine);
+      list.append(button);
+    }
+    row(current, true);
+    (model.machines || []).forEach((m) => row(m, false));
+  }
+  async function connectMachine(machine) {
+    if (machineRequest) return;
+    const controller = new AbortController();
+    machineRequest = controller;
+    renderMachines();
+    $("machines-status").textContent = "Connecting to " + machine.name + "…";
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    try {
+      const target = await action(
+        "select_machine",
+        machine.id,
+        null,
+        controller.signal,
+      );
+      const response = await fetch(target.url + "/api/pair-check", {
+        headers: { Authorization: "Bearer " + target.pairing_key },
+        signal: controller.signal,
+        cache: "no-store",
+        credentials: "omit",
+        redirect: "error",
+      });
+      if (!response.ok) throw Error("Pairing failed");
+      const receipt = await response.json();
+      if (!receipt.ok || !receipt.machine_name)
+        throw Error("No machine receipt");
+      if (!controller.signal.aborted && machineDialog.open) {
+        location.assign(
+          target.url + "/#key=" + encodeURIComponent(target.pairing_key),
+        );
+      }
+    } catch (error) {
+      if (machineDialog.open)
+        $("machines-status").textContent =
+          "Couldn’t reach " +
+          machine.name +
+          ". Check that it’s awake, running Desk Deck, and paired both ways. Your connection hasn’t changed.";
+    } finally {
+      clearTimeout(timeout);
+      if (machineRequest === controller) machineRequest = null;
+      renderMachines();
+    }
+  }
+  $("connection").onclick = () => {
+    renderMachines();
+    $("machines-status").textContent = online
+      ? ""
+      : "Reconnect this Mac to switch, or cast from another paired Mac.";
+    machineDialog.showModal();
+  };
+  $("close-machines").onclick = () => machineDialog.close();
+  machineDialog.addEventListener("close", () => {
+    machineRequest?.abort();
+    $("connection").focus();
+  });
+  machineDialog.addEventListener("click", (event) => {
+    if (event.target === machineDialog) {
+      const r = machineDialog.getBoundingClientRect();
+      if (
+        event.clientX < r.left ||
+        event.clientX > r.right ||
+        event.clientY < r.top ||
+        event.clientY > r.bottom
+      )
+        machineDialog.close();
+    }
+  });
   function switchView(name) {
     view = name;
     document

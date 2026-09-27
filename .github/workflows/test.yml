@@ -16,3 +16,12 @@ jobs:
       - run: python -m pip install -e .
       - run: python -m unittest discover -s tests -v
       - run: python scripts/check_public.py
+  mac-app:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/build_mac_app.py
+      - run: codesign --verify --deep --strict 'dist/Desk Deck.app'

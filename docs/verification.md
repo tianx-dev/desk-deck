@@ -22,3 +22,10 @@ The public package was cast to a Google Nest Hub. Its authenticated heartbeat re
 Physical taps were verified during the original prototype. This public-package check did **not** include a new manually observed tap on the Hub; a page heartbeat and a desktop HTTP action are separate evidence. Follow the README's physical-tap step when reproducing on your own device.
 
 Not covered: every Hub generation/firmware, all-day reliability, wake-from-sleep recovery, arbitrary application window selection, Windows/Linux action backends, or compatibility with every Codex database version.
+
+## Machine picker, larger controls, and Mac companion
+
+- 25 tests now pass, adding machine configuration, duplicate/invalid destination rejection, selected-key disclosure boundaries, peer identity checks, cross-origin task denial, and combined server/Cast cleanup.
+- Two isolated local servers exercised real browser navigation in both directions. An unavailable third destination kept the original page open with an error. Escape closed the native dialog and returned focus to its connection button.
+- The enlarged controls were checked at 1024 × 600 and 800 × 480. At the smaller size, launcher content fits and the machine list scrolls inside its dialog.
+- The native AppKit launcher compiled for Apple Silicon with a macOS 13 deployment target and passed ad-hoc signature verification. The combined desktop command received the physical Hub's 1024 × 600, two-touch-point heartbeat. After the macOS folder permission prompt was handled, the app-owned server also received the physical Hub heartbeat. Quitting the app stopped its web server; reopening automatically restarted the server and received a fresh Hub heartbeat. A new installation may first require macOS permission for its configured folder/network; respond to the OS prompt to complete startup.

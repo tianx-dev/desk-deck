@@ -51,3 +51,7 @@ After cloning, give your coding assistant this prompt with your own preferences:
 > Read README.md, AGENTS.md, and docs/how-it-works.md. Adapt Desk Deck for my Nest Hub. My five launcher targets are [apps or links]. The task data I care about is [specific sources]. Preserve the local-server architecture, configured action boundary, large touch targets, and visible timestamps. Keep my network details and task data in ignored local config. First propose the smallest useful integration, then implement and verify it with synthetic fixtures before I connect the real source.
 
 Good iteration is concrete: “this tile is hard to hit,” “show the last event time,” or “open this specific destination.” A vague request for more intelligence adds less value than a reliable action and an honest update.
+
+## Follow-up: several Macs and one-click startup
+
+> Add a touch-friendly popup that lets me choose which Mac the Hub controls. Make the current machine obvious and check a destination before navigating, preserving the current screen on failure. Increase text sizes and polish the launcher buttons. Draw the architecture in the README. Build a tiny native Mac launcher that starts the local server and casts when opened, with visible connection state and a Stop action. Keep paired machine credentials private and preserve the local-server architecture.

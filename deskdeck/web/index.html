@@ -69,9 +69,16 @@
           <div class="mark"><i></i><i></i><i></i><i></i></div>
           <div>
             <h1>Desk Deck</h1>
-            <div class="connection" id="connection">
-              <i class="led"></i><span>Connecting to your Mac</span>
-            </div>
+            <button
+              class="connection"
+              id="connection"
+              aria-haspopup="dialog"
+              aria-controls="machines-dialog"
+              aria-label="Choose connected machine"
+            >
+              <i class="led"></i><span>Connecting to your Mac</span
+              ><b aria-hidden="true">⌄</b>
+            </button>
           </div>
         </div>
         <div class="righthead">
@@ -204,6 +211,39 @@
       </nav>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <dialog
+      id="machines-dialog"
+      class="machine-dialog"
+      aria-labelledby="machines-title"
+      aria-describedby="machines-description"
+    >
+      <header>
+        <div>
+          <span class="machine-eyebrow">YOUR DESK, YOUR MACHINES</span>
+          <h2 id="machines-title">Connect to a Mac</h2>
+        </div>
+        <button
+          id="close-machines"
+          class="close"
+          aria-label="Close machine picker"
+        >
+          ×
+        </button>
+      </header>
+      <p id="machines-description">
+        Choose where your buttons and task updates come from.
+      </p>
+      <div id="machines-list" class="machines-list"></div>
+      <p
+        id="machines-status"
+        class="machines-status"
+        role="status"
+        aria-live="polite"
+      ></p>
+      <p class="machines-note">
+        Each Mac runs Desk Deck. Pair another Mac in your setup to add it here.
+      </p>
+    </dialog>
     <div class="scrim" id="detail">
       <section
         class="sheet"

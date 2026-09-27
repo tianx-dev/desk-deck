@@ -5,7 +5,7 @@ import os
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 
 DEFAULT_LAUNCHERS = [
     dict(
@@ -63,6 +63,8 @@ class Config:
     enable_actions: bool = False
     device_host: str = ""
     device_name: str = ""
+    machine_name: str = "My Mac"
+    machines: list[dict] = field(default_factory=list)
     data_file: str = ".runtime/tasks.json"
     codex_home: str = "~/.codex"
     codex_db: str = "state_5.sqlite"
@@ -94,6 +96,51 @@ class Config:
             ipaddress.ip_address(u.hostname)
         for address in self.allowed_clients:
             ipaddress.ip_address(address)
+        if (
+            not isinstance(self.machine_name, str)
+            or not 1 <= len(self.machine_name.strip()) <= 60
+        ):
+            raise ValueError("Choose a machine name of 1 to 60 characters")
+        if not isinstance(self.machines, list) or len(self.machines) > 8:
+            raise ValueError("Configure up to eight other machines")
+        machine_ids, machine_urls = set(), {self.public_url.rstrip("/")}
+        for machine in self.machines:
+            if not isinstance(machine, dict) or any(
+                not isinstance(machine.get(k), str)
+                for k in ("id", "name", "url", "pairing_key")
+            ):
+                raise ValueError(
+                    "Each machine needs id, name, url, and pairing_key strings"
+                )
+            target = urlsplit(machine["url"])
+            if (
+                target.scheme != "http"
+                or not target.hostname
+                or target.username
+                or target.password
+                or target.path not in ("", "/")
+                or target.query
+                or target.fragment
+                or target.port is None
+                or not 1024 <= target.port <= 65535
+            ):
+                raise ValueError(
+                    "Machine URLs must be http origins with explicit ports"
+                )
+            ipaddress.IPv4Address(target.hostname)
+            if (
+                not machine["id"].replace("_", "").isalnum()
+                or len(machine["id"]) > 60
+                or machine["id"] in machine_ids
+                or machine["url"].rstrip("/") in machine_urls
+                or not 1 <= len(machine["name"].strip()) <= 60
+                or len(machine["pairing_key"]) < 32
+            ):
+                raise ValueError(
+                    "Use unique machine ids and URLs, short names, and generated pairing keys"
+                )
+            machine_ids.add(machine["id"])
+            machine_urls.add(machine["url"].rstrip("/"))
         if self.host not in ("127.0.0.1", "::1") and not self.pairing_key:
             raise ValueError("LAN serving requires a generated pairing key")
         if self.mode not in ("demo", "file", "codex"):
@@ -146,6 +193,10 @@ class Config:
             f"http://localhost:{self.port}",
         }
 
+    @property
+    def peer_origins(self):
+        return {m["url"].rstrip("/") for m in self.machines}
+
 
 def load_config(path):
     with Path(path).open("rb") as f:
@@ -165,13 +216,37 @@ def load_config(path):
     return config
 
 
+def add_machine(path, machine_id, name, pairing_link):
+    config = load_config(path)
+    link = urlsplit(pairing_link.strip())
+    key = parse_qs(link.fragment).get("key", [""])[0]
+    machine = dict(
+        id=machine_id,
+        name=name,
+        url=link._replace(fragment="").geturl().rstrip("/"),
+        pairing_key=key,
+    )
+    config.machines.append(machine)
+    config.validate()
+    with Path(path).open("a") as f:
+        f.write("\n[[machines]]\n")
+        for key, value in machine.items():
+            f.write(key + " = " + json.dumps(value) + "\n")
+
+
 def write_local_config(
-    path, lan_host="", device_host="", device_name="", enable_actions=False
+    path,
+    lan_host="",
+    device_host="",
+    device_name="",
+    enable_actions=False,
+    machine_name="My Mac",
 ):
     c = Config(
         mode="file",
         enable_actions=enable_actions,
         pairing_key=secrets.token_urlsafe(32),
+        machine_name=machine_name,
     )
     if lan_host:
         ipaddress.ip_address(lan_host)
@@ -185,7 +260,7 @@ def write_local_config(
     c.validate()
     lines = ["# Private configuration. Never commit or share this file."]
     for key, value in vars(c).items():
-        if key == "launchers":
+        if key in ("launchers", "machines"):
             continue
         lines.append(key + " = " + json.dumps(value, ensure_ascii=False))
     for launcher in c.launchers:

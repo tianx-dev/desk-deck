@@ -1,9 +1,10 @@
 import argparse
+import getpass
 import sys
 from pathlib import Path
 
 from .casting import cast, pairing_url
-from .config import Config, load_config, write_local_config
+from .config import Config, load_config, write_local_config, add_machine
 from .server import serve
 from .publish import publish
 
@@ -33,6 +34,11 @@ def main():
     init.add_argument("--lan-host", default="")
     init.add_argument("--device-host", default="")
     init.add_argument("--device-name", default="")
+    init.add_argument("--machine-name", default="My Mac")
+    pair = sub.add_parser("pair-machine", help="Add another Mac to the display picker")
+    pair.add_argument("--config", type=Path, default=Path("config.local.toml"))
+    pair.add_argument("--id", required=True)
+    pair.add_argument("--name", required=True)
     init.add_argument(
         "--enable-actions",
         action="store_true",
@@ -50,6 +56,7 @@ def main():
     task.add_argument("--message", default="")
     task.add_argument("--open-url", default=None)
     for name, help_text in [
+        ("desktop", "Start the local server and cast together"),
         ("cast", "Launch on a configured Cast display"),
         ("pair-url", "Print a PRIVATE pairing link locally; never share it"),
     ]:
@@ -64,9 +71,18 @@ def main():
                 args.device_host,
                 args.device_name,
                 args.enable_actions,
+                args.machine_name,
             )
             print(
                 f"Created {args.output}. It contains a secret; keep it private and out of Git."
+            )
+        elif args.command == "pair-machine":
+            link = getpass.getpass(
+                "Paste the other Mac's private pairing link (hidden): "
+            )
+            add_machine(args.config, args.id, args.name, link)
+            print(
+                "Machine added. Pair this Mac on the other Mac too, then restart both servers."
             )
         elif args.command == "serve":
             if args.config and args.demo:
@@ -90,6 +106,17 @@ def main():
                 print(pairing_url(config))
             elif args.command == "cast":
                 cast(config)
+            elif args.command == "desktop":
+                from .desktop import desktop
+
+                try:
+                    desktop(config)
+                except Exception:
+                    print(
+                        "Error: Could not start the server or connect to the Hub. Check configuration and network.",
+                        file=sys.stderr,
+                    )
+                    raise SystemExit(2) from None
     except (ValueError, OSError, KeyError) as error:
         # Do not echo configuration values, URLs containing keys, or library request details.
         if isinstance(error, ValueError):

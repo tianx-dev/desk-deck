@@ -44,9 +44,19 @@ def make_server(config, bind_port=None):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header("X-Frame-Options", "DENY")
+            if (
+                self.path == "/api/pair-check"
+                and self.headers.get("Origin") in config.peer_origins
+            ):
+                self.send_header("Access-Control-Allow-Origin", self.headers["Origin"])
+                self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Allow-Methods", "GET")
+                self.send_header("Access-Control-Allow-Headers", "Authorization")
             self.send_header(
                 "Content-Security-Policy",
-                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'",
+                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' "
+                + " ".join(sorted(config.peer_origins))
+                + "; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'",
             )
             self.end_headers()
             try:
@@ -76,10 +86,36 @@ def make_server(config, bind_port=None):
                 supplied.encode(), ("Bearer " + config.pairing_key).encode()
             )
 
+        def do_OPTIONS(self):
+            if (
+                self.path != "/api/pair-check"
+                or not self.trusted_client()
+                or self.headers.get("Origin") not in config.peer_origins
+                or self.headers.get("Access-Control-Request-Method") != "GET"
+                or self.headers.get("Access-Control-Request-Headers", "").lower()
+                != "authorization"
+            ):
+                return self.reply(403, {"error": "Peer check not allowed"})
+            self.reply(204, b"")
+
         def do_GET(self):
             if not self.trusted_client():
                 return self.reply(403, {"error": "Unpaired client or invalid host"})
             path = urlsplit(self.path).path
+            if path == "/api/pair-check":
+                # Cross-origin access is limited to an authenticated identity check.
+                if (
+                    self.headers.get("Origin") not in config.peer_origins
+                    or not config.pairing_key
+                    or not hmac.compare_digest(
+                        self.headers.get("Authorization", "").encode(),
+                        ("Bearer " + config.pairing_key).encode(),
+                    )
+                ):
+                    return self.reply(403, {"error": "Machine pairing check failed"})
+                return self.reply(
+                    200, {"ok": True, "machine_name": config.machine_name}
+                )
             if path in ("/", "/index.html"):
                 return self.reply(
                     200,
@@ -103,6 +139,11 @@ def make_server(config, bind_port=None):
             if path == "/api/state":
                 state = feed.read()
                 state.update(
+                    machine={"name": config.machine_name, "url": config.public_url},
+                    machines=[
+                        {k: m[k] for k in ("id", "name", "url")}
+                        for m in config.machines
+                    ],
                     mode=config.mode,
                     actions_enabled=config.enable_actions and config.mode != "demo",
                     launchers=[
@@ -148,6 +189,20 @@ def make_server(config, bind_port=None):
                 ):
                     raise ValueError("Invalid action")
                 action, target = data["action"], data.get("target")
+                if action == "select_machine":
+                    machine = next(
+                        (m for m in config.machines if m["id"] == target), None
+                    )
+                    if machine is None:
+                        raise ValueError("Unknown machine")
+                    return self.reply(
+                        200,
+                        {
+                            "ok": True,
+                            "url": machine["url"].rstrip("/"),
+                            "pairing_key": machine["pairing_key"],
+                        },
+                    )
                 if action in ("open_app", "open_task"):
                     return self.reply(200, actions.run(action, target))
                 if action == "acknowledge":

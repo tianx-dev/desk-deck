@@ -71,6 +71,10 @@ LAN setups generate a random pairing key into the ignored private config. The Ca
 
 Every data/action request checks the client IP, Host, bearer key, and supplied Origin; action requests require the expected Origin. See SECURITY.md for why this still belongs only on a trusted LAN and why DashCast is part of the trust boundary.
 
+## Machine selection and the Mac app
+
+The native companion starts the local server and sender as one owned process. The Hub’s machine picker resolves only configured peer ids, checks the selected peer through the restricted `/api/pair-check` route, then navigates to that Mac’s server. It does not proxy arbitrary requests or forward app commands between Macs. See [machine pairing](machines.md) and [the companion lifecycle](mac-app.md).
+
 ## Source map
 
 | File | Responsibility |

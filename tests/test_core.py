@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from deskdeck.actions import Actions
-from deskdeck.config import Config, load_config, write_local_config
+from deskdeck.config import Config, load_config, write_local_config, add_machine
 from deskdeck.providers import DemoProvider, Feed, FileProvider, observe
 from deskdeck.publish import publish
 from deskdeck.server import make_server
@@ -23,6 +23,53 @@ def event(kind, at, **kwargs):
 
 
 class CoreTests(unittest.TestCase):
+    def test_pair_machine_round_trip_and_duplicate_rejection(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "config.local.toml"
+            write_local_config(path, machine_name="Studio Mac")
+            key = "fixture-" + "y" * 32
+            add_machine(
+                path, "laptop", "My laptop", "http://127.0.0.1:8769/#key=" + key
+            )
+            cfg = load_config(path)
+            self.assertEqual(cfg.machine_name, "Studio Mac")
+            self.assertEqual(cfg.machines[0]["pairing_key"], key)
+            before = path.read_bytes()
+            with self.assertRaises(ValueError):
+                add_machine(
+                    path, "laptop", "Duplicate", "http://127.0.0.1:8769/#key=" + key
+                )
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_machine_url_rejects_credentials_and_non_origins(self):
+        for url in [
+            "file:///tmp/server",
+            "http://user:pass@127.0.0.1:8769",
+            "http://127.0.0.1:8769/api/action",
+            "http://127.0.0.1:8769/?key=x",
+        ]:
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                Config(
+                    machines=[
+                        dict(id="peer", name="Peer", url=url, pairing_key="x" * 32)
+                    ]
+                ).validate()
+
+    def test_desktop_starts_server_before_cast_and_closes_it(self):
+        from deskdeck.desktop import desktop
+        from unittest.mock import MagicMock
+
+        server = MagicMock()
+        server.__enter__.return_value = server
+        with (
+            patch("deskdeck.desktop.make_server", return_value=server),
+            patch("deskdeck.desktop.cast", side_effect=ValueError("test failure")),
+        ):
+            with self.assertRaises(ValueError):
+                desktop(Config())
+        server.shutdown.assert_called_once()
+        server.__exit__.assert_called_once()
+
     def test_server_start_does_not_depend_on_reverse_dns(self):
         with patch(
             "socket.getfqdn", side_effect=AssertionError("Unexpected DNS lookup")
@@ -202,6 +249,82 @@ class HttpTests(unittest.TestCase):
         status, data = self.request("GET", "/api/state")
         self.assertEqual(status, 200)
         self.assertNotIn(self.key.encode(), data)
+
+    def test_machine_keys_only_returned_for_selected_configured_target(self):
+        peer_key = "peer-" + "y" * 32
+        self.cfg.machines = [
+            dict(
+                id="peer",
+                name="Laptop",
+                url="http://127.0.0.1:8769",
+                pairing_key=peer_key,
+            )
+        ]
+        status, data = self.request("GET", "/api/state")
+        self.assertNotIn(peer_key.encode(), data)
+        self.assertEqual(json.loads(data)["machines"][0]["name"], "Laptop")
+        status, data = self.request(
+            "POST", "/api/action", {"action": "select_machine", "target": "peer"}
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(data)["pairing_key"], peer_key)
+        self.assertEqual(
+            self.request(
+                "POST",
+                "/api/action",
+                {"action": "select_machine", "target": "unconfigured"},
+            )[0],
+            400,
+        )
+        self.assertEqual(
+            self.request(
+                "POST",
+                "/api/action",
+                {"action": "select_machine", "target": "peer"},
+                origin=False,
+            )[0],
+            403,
+        )
+
+    def test_peer_check_does_not_grant_cross_origin_task_access(self):
+        origin = "http://127.0.0.1:8769"
+        self.cfg.machines = [
+            dict(id="peer", name="Laptop", url=origin, pairing_key="x" * 32)
+        ]
+
+        def request(method, path, key=self.key, request_origin=origin):
+            conn = http.client.HTTPConnection("127.0.0.1", self.cfg.port)
+            conn.request(
+                method,
+                path,
+                headers={
+                    "Origin": request_origin,
+                    "Authorization": "Bearer " + key,
+                    "Sec-Fetch-Site": "cross-site",
+                    "Access-Control-Request-Method": "GET",
+                    "Access-Control-Request-Headers": "authorization",
+                },
+            )
+            response = conn.getresponse()
+            result = (
+                response.status,
+                response.getheader("Access-Control-Allow-Origin"),
+                response.read(),
+            )
+            conn.close()
+            return result
+
+        self.assertEqual(request("OPTIONS", "/api/pair-check")[:2], (204, origin))
+        status, allowed, data = request("GET", "/api/pair-check")
+        self.assertEqual((status, allowed), (200, origin))
+        self.assertEqual(set(json.loads(data)), {"ok", "machine_name"})
+        self.assertEqual(request("GET", "/api/pair-check", key="wrong")[0], 403)
+        self.assertEqual(
+            request("GET", "/api/pair-check", request_origin="http://example.org")[0],
+            403,
+        )
+        self.assertEqual(request("GET", "/api/state")[:2], (401, None))
+        self.assertEqual(request("OPTIONS", "/api/action")[0], 403)
 
     def test_action_needs_origin(self):
         self.assertEqual(

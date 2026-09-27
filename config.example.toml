@@ -4,6 +4,7 @@ host = "127.0.0.1"
 port = 8765
 public_url = "http://127.0.0.1:8765"
 allowed_clients = ["127.0.0.1"]
+machine_name = "Demo Mac"
 mode = "demo"
 enable_actions = false
 pairing_key = ""

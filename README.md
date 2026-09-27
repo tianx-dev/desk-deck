@@ -8,6 +8,7 @@ Big app buttons, live task updates, a quiet activity inbox, and a focus timer—
 
 ## What it does
 
+- Tap **Connected to…** to choose a paired Mac. Buttons and task updates follow the selected machine.
 - Tap a tile to bring an application forward or open a configured link.
 - See task progress with a timestamp and the latest message.
 - Tap a task, inspect its update, and open its configured destination on your Mac.
@@ -45,6 +46,7 @@ python3 -m deskdeck init \
   --lan-host "$DECK_LAN_IP" \
   --device-host "$NEST_HUB_IP" \
   --device-name 'Desk display' \
+  --machine-name 'Studio MacBook' \
   --enable-actions
 ```
 
@@ -70,6 +72,45 @@ python3 -m deskdeck cast --config config.local.toml
 The Cast command replaces the current Cast app, opens the local page through the community **DashCast** receiver, and waits for a page heartbeat. A successful receipt includes the viewport size and reported touch points. **Tap a real tile next:** an app-launch acknowledgement alone does not prove touch works.
 
 Keep both processes running. Ctrl-C stops each process; the Hub's Home gesture returns to its normal screen. Nothing installs itself at login.
+
+## Open one small Mac app
+
+After the setup above, build the native companion using the same virtual environment:
+
+```sh
+python3 scripts/build_mac_app.py --config config.local.toml
+open 'dist/Desk Deck.app'
+```
+
+Requires Apple's Xcode Command Line Tools (`xcode-select --install` if needed). **Opening the app starts the local server and casts to your configured Nest Hub automatically.** Stop the terminal server/Cast processes first to avoid a port conflict. The app shows connection status and has Start & Cast, Stop, and Configuration controls. Closing its window keeps it running; quitting stops its server and sender. Reopen it from the Dock to show its window.
+
+The app is a small, locally built launcher linked to this checkout, its Python environment, and your private config. Keep those in place. It is ad-hoc signed, not a notarized standalone installer; build it on each Mac. It does not install a login item. See [Mac app details](docs/mac-app.md).
+
+## Choose which Mac is connected
+
+Give each Mac its own `machine_name`, run Desk Deck on each, and pair them using the private setup flow in [the machine guide](docs/machines.md). Tap the connection label at the top of the Hub to open the picker. The current Mac is marked **Connected**; tap another Mac to check it and switch.
+
+The selected Mac serves the whole interface, its own app buttons, and its own task feed. If its pairing check fails, the current page stays open. Discovery is explicit pairing; the project does not scan your network.
+
+![Machine picker with fictional Macs](docs/assets/machines.png)
+
+## Architecture
+
+```mermaid
+flowchart TD
+    App[Small Mac app] -->|Start on open| Local[Local Python server]
+    App -->|Start Cast sender| Sender[PyChromecast + DashCast]
+    Sender -->|Load local web page| Hub[Nest Hub touch UI]
+    Hub -->|Named actions + pairing key| Local
+    Local -->|Configured app or link| Mac[macOS applications]
+    Jobs[Your scripts and workflows] -->|Task updates| File[Local task file]
+    File --> Local
+    Local -->|Tasks and notifications| Hub
+    Hub -->|Machine picker: check, then navigate| Other[Another paired Mac's local server]
+    Other --> OtherApps[That Mac's applications and task feed]
+```
+
+The Hub is a browser and touch input device. Each Mac owns its data and actions. Switching machines changes the page's local server; no AI service is involved in button presses. [Detailed architecture](docs/how-it-works.md).
 
 ## Connect real task progress
 
